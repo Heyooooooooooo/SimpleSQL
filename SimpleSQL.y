@@ -18,15 +18,15 @@ char rootDir[100]={0};	//文件保存路径
 enum TYPE {INT,CHAR};	//字段可用类型
 //create语句中的字段定义-------------------------------------------------
 struct Createfieldsdef{		
-	char		*field;		//字段名称
-	enum TYPE	type;		//字段类型
+	char		*field;			//字段名称
+	enum TYPE	type;			//字段类型
 	int			length;		//字段长度
-	struct	Createfieldsdef	*next_fdef;//下一字段
+	struct	Createfieldsdef	*next_fdef;	//下一字段
 };
 //type字段定义-----------------------------------------------------------
 struct fieldType{
-	enum TYPE	type;		//字段类型
-	int			length;		//字段长度
+	enum TYPE	type;			//字段类型
+	int		length;			//字段长度
 };
 //create语法树根节点-----------------------------------------------------
 struct Createstruct{		
@@ -36,39 +36,39 @@ struct Createstruct{
 //insert语法树根节点-----------------------------------------------------
 struct insertValue {
     char *value;				  //插入值
-    struct insertValue *next_Value;//下一插入值
+    struct insertValue *next_Value;		  //下一插入值
 };
 //select条件-------------------------------------------------------------
 struct Conditions{
-	struct Conditions *left;//左部条件
-	struct Conditions *right;//右部条件
-	char comp_op;		/* 'a'是and, 'o'是or, '<' , '>' , '=', ‘!='  */
-	int type;			/* 0是字段，1是字符串，2是整数 */
-	char *value;		/* 根据type存放字段名、字符串或整数 */
-	char *table;		/* NULL或表名 */
+	struct Conditions *left;		//左部条件
+	struct Conditions *right;		//右部条件
+	char comp_op;				/* 'a'是and, 'o'是or, '<' , '>' , '=', ‘!='  */
+	int type;				/* 0是字段，1是字符串，2是整数 */
+	char *value;				/* 根据type存放字段名、字符串或整数 */
+	char *table;				/* NULL或表名 */
 }; 
 //select语句中选中的字段-------------------------------------------------
 struct	Selectedfields{
-	char 	*table;			//字段所属表
-	char 	*field;			//字段名称
-	struct 	Selectedfields	*next_sf;//下一个字段
+	char 	*table;				//字段所属表
+	char 	*field;				//字段名称
+	struct 	Selectedfields	*next_sf;	//下一个字段
 };
 //select语句中选中的表---------------------------------------------------
 struct	Selectedtables{
-	char	  *table;		//基本表名称
+	char	  *table;			//基本表名称
 	struct  Selectedtables  *next_st;	//下一个表
 };
 //select语法树的根节点---------------------------------------------------
 struct	Selectstruct{
-	struct Selectedfields 	*sf;	//所选字段
-	struct Selectedtables	*st;	//所选基本表
-	struct Conditions		*cons;	//条件
+	struct Selectedfields 	*sf;		//所选字段
+	struct Selectedtables	*st;		//所选基本表
+	struct Conditions	*cons;		//条件
 };
 //set语法树根节点--------------------------------------------------------
 struct Setstruct{
     char *field;					//需更改字段
     char *value;					//更改值
-	struct Setstruct *next_sf;		//需更改下一字段
+    struct Setstruct *next_sf;				//需更改下一字段
 };
 
 void createDB();
@@ -97,17 +97,17 @@ void handle(int read_line[],int count_value[],int all_table,int index);
 %union{
 	//属于create语法树的类型--------------------
 	char op;
-	char *yych;	//字面量
-	struct Createfieldsdef *cfdef_var;//字段定义
-	struct fieldType *fT;//type定义
-	struct Createstruct *cs_var;//整个create语句
+	char *yych;				//字面量
+	struct Createfieldsdef *cfdef_var;	//字段定义
+	struct fieldType *fT;			//type定义
+	struct Createstruct *cs_var;		//整个create语句
 	//属于insert的语法树------------------------
 	struct insertValue *is_val;
 	//属于select语法树的类型--------------------
 	struct Selectedfields	*sf_var;	//所选字段
 	struct Selectedtables	*st_var;	//所选表格
-	struct Conditions	*cons_var;		//条件语句
-	struct Selectstruct	*ss_var;		//整个select语句
+	struct Conditions	*cons_var;	//条件语句
+	struct Selectstruct	*ss_var;	//整个select语句
 	//属于update的语法树------------------------
 	struct Setstruct *s_var;
 }
@@ -136,324 +136,322 @@ start		:statements;
 statements	:statements statement|statement;
 statement	:createsql|selectsql|usesql|showsql|insertsql|deletesql|dropsql|updatesql|exitsql;
 createsql:CREATE TABLE table '(' fieldsdefinition ')' ';'
-		  {
-			 $$=(struct Createstruct *)malloc(sizeof(struct Createstruct));
-			 $$->table=$3;
-			 $$->fdef=$5;
-			 createTable($$);
-		  }
-		 |CREATE DATABASE ID ';'
-		  {
-			 strcpy(database,$3);
-			 createDB();
-		  };
-		 table:ID
-			   {
-				   $$=$1;
-			   };
-		 fieldsdefinition:field_type
-						  {
-							  $$=(struct Createfieldsdef *)malloc(sizeof(struct Createfieldsdef));
-							  $$->field=$1->field;
-							  $$->type=$1->type;
-							  $$->length=$1->length;
-							  $$->next_fdef=NULL;
-						  }
-						 |field_type ',' fieldsdefinition
-						  {
-							  $$=(struct Createfieldsdef *)malloc(sizeof(struct Createfieldsdef));
-							  $$->field=$1->field;
-							  $$->type=$1->type;
-							  $$->length=$1->length;
-							  $$->next_fdef=$3;
-						  };
-		 field_type:field type
-					{
-						$$=(struct Createfieldsdef *)malloc(sizeof(struct Createfieldsdef));
-						$$->field=$1;
-						$$->type=$2->type;
-						$$->length=$2->length;
-					};
-		 field:ID
-			   {
-				  $$=$1;
-			   };
-		 type:CHAR '(' NUMBER ')'
-			  {
-				  $$=(struct fieldType *)malloc(sizeof(struct fieldType));
-				  $$->type=CHAR;
-				  $$->length=atoi($3);
-			  }
-			 |INT
-			  {
-				  $$=(struct fieldType *)malloc(sizeof(struct fieldType));
-				  $$->type=INT;
-				  $$->length=4;
-			  };
-usesql	:USE ID ';'
-		{
-			strcpy(database,$2);
-			useDB();
-		};
+	  {
+		$$=(struct Createstruct *)malloc(sizeof(struct Createstruct));
+		$$->table=$3;
+		$$->fdef=$5;
+		createTable($$);
+	  }
+	 |CREATE DATABASE ID ';'
+	  {
+		strcpy(database,$3);
+		createDB();
+	  };
+	  table:ID
+	  {
+		$$=$1;
+	  };
+	  fieldsdefinition:field_type
+	  {
+		$$=(struct Createfieldsdef *)malloc(sizeof(struct Createfieldsdef));
+		$$->field=$1->field;
+		$$->type=$1->type;
+		$$->length=$1->length;
+		$$->next_fdef=NULL;
+	  }
+	 |field_type ',' fieldsdefinition
+	  {
+		$$=(struct Createfieldsdef *)malloc(sizeof(struct Createfieldsdef));
+		$$->field=$1->field;
+		$$->type=$1->type;
+		$$->length=$1->length;
+		$$->next_fdef=$3;
+	  };
+	  field_type:field type
+	  {
+		$$=(struct Createfieldsdef *)malloc(sizeof(struct Createfieldsdef));
+		$$->field=$1;
+		$$->type=$2->type;
+		$$->length=$2->length;
+	  };
+	  field:ID
+	  {
+		$$=$1;
+	  };
+	  type:CHAR '(' NUMBER ')'
+	  {
+		$$=(struct fieldType *)malloc(sizeof(struct fieldType));
+		$$->type=CHAR;
+		$$->length=atoi($3);
+	  }
+	 |INT
+	  {
+		$$=(struct fieldType *)malloc(sizeof(struct fieldType));
+		$$->type=INT;
+		$$->length=4;
+	  };
+usesql:USE ID ';'
+       {
+	    strcpy(database,$2);
+	    useDB();
+       };
 showsql	:SHOW DATABASES ';'
-		 {
-			printf("Database:\n");
-			getDB();
-		 }
-		|SHOW TABLES ';'
-		 {
-			printf("Tables:\n");
-			getTable();
-		 };
+	 {
+		printf("Database:\n");
+		getDB();
+	 }
+	|SHOW TABLES ';'
+	 {
+		printf("Tables:\n");
+		getTable();
+	 };
 selectsql:SELECT fields_star FROM tables ';'
-		  {
-		      selectNoCdt($2,$4);
-		  }
-		 |SELECT fields_star FROM tables WHERE conditions ';'
-		  {
-		      selectCdt($2,$4,$6);
-		  };
-		  fields_star:table_fields
-					  {
-					      $$ =(struct Selectedfields *)malloc(sizeof(struct Selectedfields));
-					      $$=$1;
-					  }
-					 |'*'
-					  {
-					      $$ =(struct Selectedfields *)malloc(sizeof(struct Selectedfields));
-					      $$=NULL;
-					  };
-		  table_fields:table_field
-					   {
-					       $$ =(struct Selectedfields *)malloc(sizeof(struct Selectedfields));
-					       $$=$1;
-					   }
-					  |table_field ',' table_fields
-					   {
-					       $$ =(struct Selectedfields *)malloc(sizeof(struct Selectedfields));
-					       $$->field=$1->field;
-					       $$->table=$1->table;
-					       $$->next_sf=$3;
-					   };
-		  table_field:field
-					  {
-					      $$=(struct Selectedfields *)malloc(sizeof(struct Selectedfields));
-						  $$->field=$1;
-						  $$->table=NULL;
-						  $$->next_sf=NULL;
-					  }
-					 |table '.' field
-					  {
-					      $$=(struct Selectedfields *)malloc(sizeof(struct Selectedfields));
-					      $$->field=$3;
-					      $$->table=$1;
-					      $$->next_sf=NULL;
-					  };
-		  tables:table
-				 {
-				     $$=(struct Selectedtables *)malloc(sizeof(struct Selectedtables));
-				     $$->table=$1;
-				     $$->next_st=NULL;
-				 }
-				|table ',' tables
-				 {
-				     $$=(struct Selectedtables *)malloc(sizeof (struct Selectedtables));
-				     $$->table=$1;
-				     $$->next_st=$3;
-				 };
-		  conditions:condition
-					 {
-					     $$=(struct Conditions *)malloc(sizeof(struct Conditions));
-					     $$=$1;
-					 }
-					|'('conditions')'
-					 {
-					     $$=(struct Conditions *)malloc(sizeof(struct Conditions));
-					     $$=$2;
-					 }
-		            |conditions AND conditions
-		             {
-		                 $$=(struct Conditions *)malloc(sizeof(struct Conditions));
-		                 $$->left=$1;
-		                 $$->right=$3;
-		                 $$->comp_op='a';
-		             }
-		            |conditions OR conditions
-		             {
-		                 $$=(struct Conditions *)malloc(sizeof(struct Conditions));
-		                 $$->left=$1;
-		                 $$->right=$3;
-		                 $$->comp_op='o';
-		             };
-		  condition:comp_left comp_op comp_right
-					{
-					    $$=(struct Conditions *)malloc(sizeof(struct Conditions));
-					    $$->left=$1;
-					    $$->right=$3;
-					    $$->comp_op=$2;
-					};
-		  comp_left:table_field
-					{
-					    $$=(struct Conditions *)malloc(sizeof(struct Conditions));
-					    $$->type=0;
-					    $$->value=$1->field;
-					    $$->table=$1->table;
-					    $$->left=NULL;
-					    $$->right=NULL;
-					};
-		  comp_right:table_field
-				     {
-				        $$=(struct Conditions *)malloc(sizeof(struct Conditions));
-				        $$->type=0;
-				        $$->value=$1->field;
-					    $$->table=$1->table;
-					    $$->left=NULL;
-					    $$->right=NULL;
-				     }
-				    |NUMBER
-				     {
-						$$=(struct Conditions *)malloc(sizeof(struct Conditions));
-				        $$->type=2;
-				        $$->value=$1;
-				        $$->table=NULL;
-					    $$->left=NULL;
-					    $$->right=NULL;
-				     }
-				    |QUOTE ID QUOTE
-				     {
-				        $$=(struct Conditions *)malloc(sizeof(struct Conditions));
-				        $$->type=1;
-				        $$->value=$2;
-				        $$->table=NULL;
-					    $$->left=NULL;
-					    $$->right=NULL;
-				     }
-				    |QUOTE NUMBER QUOTE
-				     {
-				        $$=(struct Conditions *)malloc(sizeof(struct Conditions));
-				        $$->type=1;
-				        $$->value=$2;
-				        $$->table=NULL;
-					    $$->left=NULL;
-					    $$->right=NULL;
-				     };
-		  comp_op:'<'
-				  {
-				      $$='<';
-				  }
-				 |'>'
-				  {
-				      $$='>';
-				  }
-				 |'='
-				  {
-				      $$='=';
-				  }
-				 |'!''='
-				  {
-					  $$='!';
-				  };
+	  {
+		selectNoCdt($2,$4);
+	  }
+	 |SELECT fields_star FROM tables WHERE conditions ';'
+	  {
+		selectCdt($2,$4,$6);
+	  };
+	  fields_star:table_fields
+	  {
+		$$ =(struct Selectedfields *)malloc(sizeof(struct Selectedfields));
+		$$=$1;
+	  }
+	 |'*'
+	  {
+		$$ =(struct Selectedfields *)malloc(sizeof(struct Selectedfields));
+		$$=NULL;
+	  };
+	  table_fields:table_field
+	  {
+		$$ =(struct Selectedfields *)malloc(sizeof(struct Selectedfields));
+		$$=$1;
+	  }
+	 |table_field ',' table_fields
+	  {
+		$$ =(struct Selectedfields *)malloc(sizeof(struct Selectedfields));
+		$$->field=$1->field;
+		$$->table=$1->table;
+		$$->next_sf=$3;
+	  };
+	  table_field:field
+	  {
+		$$=(struct Selectedfields *)malloc(sizeof(struct Selectedfields));
+		$$->field=$1;
+		$$->table=NULL;
+		$$->next_sf=NULL;
+	  }
+	 |table '.' field
+	  {
+		$$=(struct Selectedfields *)malloc(sizeof(struct Selectedfields));
+		$$->field=$3;
+		$$->table=$1;
+		$$->next_sf=NULL;
+	  };
+	  tables:table
+	  {
+		$$=(struct Selectedtables *)malloc(sizeof(struct Selectedtables));
+		$$->table=$1;
+		$$->next_st=NULL;
+	  }
+	 |table ',' tables
+	  {
+		$$=(struct Selectedtables *)malloc(sizeof (struct Selectedtables));
+		$$->table=$1;
+		$$->next_st=$3;
+	  };
+	  conditions:condition
+	  {
+		$$=(struct Conditions *)malloc(sizeof(struct Conditions));
+		$$=$1;
+	  }
+	 |'('conditions')'
+	  {
+		$$=(struct Conditions *)malloc(sizeof(struct Conditions));
+		$$=$2;
+	  }
+	 |conditions AND conditions
+	  {
+		$$=(struct Conditions *)malloc(sizeof(struct Conditions));
+		$$->left=$1;
+		$$->right=$3;
+		$$->comp_op='a';
+	  }
+	 |conditions OR conditions
+	  {
+		$$=(struct Conditions *)malloc(sizeof(struct Conditions));
+		$$->left=$1;
+		$$->right=$3;
+		$$->comp_op='o';
+	  };
+	  condition:comp_left comp_op comp_right
+	  {
+		$$=(struct Conditions *)malloc(sizeof(struct Conditions));
+		$$->left=$1;
+		$$->right=$3;
+		$$->comp_op=$2;
+	  };
+	  comp_left:table_field
+	 {
+		$$=(struct Conditions *)malloc(sizeof(struct Conditions));
+		$$->type=0;
+		$$->value=$1->field;
+		$$->table=$1->table;
+		$$->left=NULL;
+		$$->right=NULL;
+	 };
+	 comp_right:table_field
+	 {
+		$$=(struct Conditions *)malloc(sizeof(struct Conditions));
+		$$->type=0;
+		$$->value=$1->field;
+		$$->table=$1->table;
+		$$->left=NULL;
+		$$->right=NULL;
+	 }
+	|NUMBER
+	 {
+		$$=(struct Conditions *)malloc(sizeof(struct Conditions));
+		$$->type=2;
+		$$->value=$1;
+		$$->table=NULL;
+		$$->left=NULL;
+		$$->right=NULL;
+	 }
+	|QUOTE ID QUOTE
+	 {
+		$$=(struct Conditions *)malloc(sizeof(struct Conditions));
+		$$->type=1;
+		$$->value=$2;
+		$$->table=NULL;
+		$$->left=NULL;
+		$$->right=NULL;
+	 }
+	|QUOTE NUMBER QUOTE
+	 {
+		$$=(struct Conditions *)malloc(sizeof(struct Conditions));
+		$$->type=1;
+		$$->value=$2;
+		$$->table=NULL;
+		$$->left=NULL;
+		$$->right=NULL;
+	 };
+	 comp_op:'<'
+	 {
+		$$='<';
+	 }
+	|'>'
+	 {
+		$$='>';
+	 }
+	|'='
+	 {
+		$$='=';
+	 }
+	|'!''='
+	 {
+		$$='!';
+	 };
 insertsql:INSERT INTO table VALUES '(' values ')' ';'
-		  {
-		      insertOrder($3,$6);
-		  }
-		 |INSERT INTO table '(' values ')' VALUES '(' values ')' ';'
-		  {
-		      insertNoOrder($3,$5,$9);
-		  };
-		 values:value
-				{
-				    $$=(struct insertValue *)malloc(sizeof(struct insertValue));
-				    $$->value=$1->value;
-				    $$->next_Value=NULL;
-				}
-			   |value ',' values
-			    {
-			        $$=(struct insertValue *)malloc(sizeof(struct insertValue));
-			        $$->value=$1->value;
-			        $$->next_Value=$3;
-			    }
-			   ;
-		 value:QUOTE ID QUOTE
-			   {
-			       $$=(struct insertValue *)malloc(sizeof(struct insertValue));
-				   $$->value=$2;
-				   $$->next_Value=NULL;
-			   }
-			  |QUOTE NUMBER QUOTE
-			   {
-			       $$=(struct insertValue *)malloc(sizeof(struct insertValue));
-				   $$->value=$2;
-				   $$->next_Value=NULL;
-			   }
-			  |NUMBER
-			   {
-			       $$=(struct insertValue *)malloc(sizeof(struct insertValue));
-			       $$->value=$1;
-			       //itoa((int)$1,$$->value,10);
-			       $$->next_Value=NULL;
-			   }
-			  |ID
-			   {
-			       $$=(struct insertValue *)malloc(sizeof(struct insertValue));
-				   $$->value=$1;
-				   $$->next_Value=NULL;
-			   };
+	  {
+		insertOrder($3,$6);
+	  }
+	 |INSERT INTO table '(' values ')' VALUES '(' values ')' ';'
+	  {
+		insertNoOrder($3,$5,$9);
+	  };
+	  values:value
+	  {
+		$$=(struct insertValue *)malloc(sizeof(struct insertValue));
+		$$->value=$1->value;
+		$$->next_Value=NULL;
+	  }
+	 |value ',' values
+	  {
+		$$=(struct insertValue *)malloc(sizeof(struct insertValue));
+		$$->value=$1->value;
+		$$->next_Value=$3;
+	  };
+	  value:QUOTE ID QUOTE
+	  {
+		$$=(struct insertValue *)malloc(sizeof(struct insertValue));
+		$$->value=$2;
+		$$->next_Value=NULL;
+	  }
+	 |QUOTE NUMBER QUOTE
+	  {
+		$$=(struct insertValue *)malloc(sizeof(struct insertValue));
+		$$->value=$2;
+		$$->next_Value=NULL;
+	  }
+	 |NUMBER
+	  {
+		$$=(struct insertValue *)malloc(sizeof(struct insertValue));
+		$$->value=$1;
+		$$->next_Value=NULL;
+	  }
+	 |ID
+	  {
+		$$=(struct insertValue *)malloc(sizeof(struct insertValue));
+		$$->value=$1;
+		$$->next_Value=NULL;
+	  };
 deletesql:DELETE FROM table ';'
-		  {
-		      deleteAll($3);
-		  }
-		 |DELETE FROM table WHERE conditions ';'
-		  {
-		      deleteCdt($3,$5);
-		  };
+	  {
+		deleteAll($3);
+	  }
+	 |DELETE FROM table WHERE conditions ';'
+	  {
+		deleteCdt($3,$5);
+	  };
 dropsql:DROP TABLE ID ';'
-		{
-		    dropTable($3);
-		}
-	   |DROP DATABASE ID ';'
-		{
-		    strcpy(database,$3);
-		    dropDB();
-		};
+	{
+		dropTable($3);
+	}
+       |DROP DATABASE ID ';'
+	{
+		strcpy(database,$3);
+		dropDB();
+	};
 updatesql:UPDATE table SET sets ';'
-		  {
-		      updateAll($2,$4);
-		  }
-		 |UPDATE table SET sets WHERE conditions ';'
-		  {
-		      updateCdt($2,$4,$6);
-		  };
-		 sets:set
-			  {
-			      $$=$1;
-			  }
-		     |set ',' sets
-		      {
-		          $$=(struct Setstruct *)malloc(sizeof(struct Setstruct));
-		          $$->field=$1->field;
-		          $$->value=$1->value;
-		          $$->next_sf=$3;
-		      };
-		 set:ID '=' NUMBER
-			 {
-			     $$=(struct Setstruct *)malloc(sizeof(struct Setstruct));
-			     $$->field=$1;
-			     $$->value=$3;
-			     $$->next_sf=NULL;
-			 }
-		    |ID '=' QUOTE ID QUOTE
-		     {
-		         $$=(struct Setstruct *)malloc(sizeof(struct Setstruct));
-		         $$->field=$1;
-		         $$->value=$4;
-		         $$->next_sf=NULL;
-		     };
+	  {
+		updateAll($2,$4);
+	  }
+	 |UPDATE table SET sets WHERE conditions ';'
+	  {
+		updateCdt($2,$4,$6);
+	  };
+	  sets:set
+	  {
+		$$=$1;
+	  }
+	 |set ',' sets
+	  {
+		$$=(struct Setstruct *)malloc(sizeof(struct Setstruct));
+		$$->field=$1->field;
+		$$->value=$1->value;
+		$$->next_sf=$3;
+	  };
+	  set:ID '=' NUMBER
+	  {
+		$$=(struct Setstruct *)malloc(sizeof(struct Setstruct));
+		$$->field=$1;
+		$$->value=$3;
+		$$->next_sf=NULL;
+	  }
+	 |ID '=' QUOTE ID QUOTE
+	  {
+		$$=(struct Setstruct *)malloc(sizeof(struct Setstruct));
+		$$->field=$1;
+		$$->value=$4;
+		$$->next_sf=NULL;
+	  };
 exitsql:EXIT ';'
-	   {
-           printf("Glad to see you again!\n");
-           exit(0);
-	   };		
+	{
+             	printf("Glad to see you again!\n");
+           	exit(0);
+	};		
 
 
 %%
