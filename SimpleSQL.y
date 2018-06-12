@@ -5,7 +5,6 @@ ParserWizard generated YACC file.
 
 Date: 2018年4月23日
 ****************************************************************************/
-
 #include "mylexer.h"
 #include<stdio.h>
 #include<stdlib.h>
